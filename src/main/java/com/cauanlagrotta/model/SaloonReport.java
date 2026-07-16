@@ -3,7 +3,7 @@ package com.cauanlagrotta.model;
 import lombok.Data;
 
 @Data
-public class SaloonModel {
+public class SaloonReport {
 
   private Long saloonId;
 
