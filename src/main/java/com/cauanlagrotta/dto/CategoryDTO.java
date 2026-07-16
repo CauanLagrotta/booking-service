@@ -1,4 +1,4 @@
-package com.cauanlagrotta.service_offering.dto;
+package com.cauanlagrotta.dto;
 
 import lombok.Data;
 
