@@ -22,7 +22,7 @@ public interface BookingService {
 
   Booking getById(Long bookingId);
 
-  Booking update(Booking booking, BookingStatus status);
+  Booking update(Long bookingId, BookingStatus status);
 
   List<Booking> getByDateAndSaloonId(LocalDate date, Long saloonId);
 
