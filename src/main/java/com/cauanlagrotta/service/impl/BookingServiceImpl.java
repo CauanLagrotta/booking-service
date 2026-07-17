@@ -89,21 +89,57 @@ public class BookingServiceImpl implements BookingService {
 
   @Override
   public Booking getById(Long bookingId) {
-    return null;
+    Booking booking = bookingRepository.findById(bookingId).orElse(null);
+
+    if(booking == null){
+      throw new RuntimeException("Booking not found");
+    }
+
+    return booking;
   }
 
   @Override
-  public Booking update(Booking booking, BookingStatus status) {
-    return null;
+  public Booking update(Long bookingId, BookingStatus status) {
+    Booking booking = this.getById(bookingId);
+    booking.setStatus(status);
+
+    return bookingRepository.save(booking);
   }
 
   @Override
   public List<Booking> getByDateAndSaloonId(LocalDate date, Long saloonId) {
-    return List.of();
+    List<Booking> allBookings = getBySaloonId(saloonId);
+
+    if(date == null){
+      return allBookings;
+    }
+
+    return allBookings.stream().filter(booking -> isSameDate(booking.getStartTime(), date) || isSameDate(booking.getEndTime(), date)).toList();
+  }
+
+  private boolean isSameDate(LocalDateTime dateTime, LocalDate date) {
+    return dateTime.toLocalDate().isEqual(date);
   }
 
   @Override
   public SaloonReport getSaloonReport(Long saloonId) {
-    return null;
+    List<Booking> bookings = getBySaloonId(saloonId);
+
+    int totalEarnings = bookings.stream().mapToInt(Booking::getTotalPrice).sum();
+
+    Integer totalBooking = bookings.size();
+
+    List<Booking> cancelledBookings = bookings.stream().filter(booking -> booking.getStatus().equals(BookingStatus.CANCELLED)).toList();
+
+    Double totalRefund = cancelledBookings.stream().mapToDouble(Booking::getTotalPrice).sum();
+
+    SaloonReport report = new SaloonReport();
+    report.setSaloonId(saloonId);
+    report.setCancelledBookings(cancelledBookings.size());
+    report.setTotalBookings(totalBooking);
+    report.setTotalEarnings(totalEarnings);
+    report.setTotalRefund(totalRefund);
+
+    return report;
   }
 }
