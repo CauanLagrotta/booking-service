@@ -9,7 +9,7 @@ public class SaloonReport {
 
   private String saloonName;
 
-  private Double totalEarnings;
+  private int totalEarnings;
 
   private Integer totalBookings;
 
