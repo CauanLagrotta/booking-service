@@ -135,6 +135,7 @@ public class BookingServiceImpl implements BookingService {
 
     SaloonReport report = new SaloonReport();
     report.setSaloonId(saloonId);
+    report.setSaloonName("A very cool saloon");
     report.setCancelledBookings(cancelledBookings.size());
     report.setTotalBookings(totalBooking);
     report.setTotalEarnings(totalEarnings);

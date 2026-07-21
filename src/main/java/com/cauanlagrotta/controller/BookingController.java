@@ -7,10 +7,14 @@ import com.cauanlagrotta.model.Booking;
 import com.cauanlagrotta.model.SaloonReport;
 import com.cauanlagrotta.service.BookingService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,6 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BookingController {
 
+  private static final Logger log = LoggerFactory.getLogger(BookingController.class);
   private final BookingService bookingService;
 
   @PostMapping
@@ -30,6 +35,10 @@ public class BookingController {
 
     SaloonDTO saloon = new SaloonDTO();
     saloon.setId(saloonId);
+    saloon.setOpeningTime(LocalTime.of(8, 0));
+    saloon.setClosingTime(LocalTime.of(18, 0));
+
+    log.info("Saloon id = {}, opening time = {}, closing time = {}", saloon.getId(), saloon.getOpeningTime(), saloon.getClosingTime());
 
     Set<ServiceDTO> serviceDTOSet = new HashSet<>();
 
