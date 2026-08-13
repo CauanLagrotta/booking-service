@@ -26,3 +26,14 @@ eureka:
 
 server:
   port: 5005
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
