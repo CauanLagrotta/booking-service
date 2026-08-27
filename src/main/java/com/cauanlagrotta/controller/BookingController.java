@@ -1,11 +1,16 @@
 package com.cauanlagrotta.controller;
 
 import com.cauanlagrotta.domain.BookingStatus;
+import com.cauanlagrotta.domain.PaymentMethod;
 import com.cauanlagrotta.dto.*;
 import com.cauanlagrotta.mapper.BookingMapper;
 import com.cauanlagrotta.model.Booking;
 import com.cauanlagrotta.model.SaloonReport;
 import com.cauanlagrotta.service.BookingService;
+import com.cauanlagrotta.service.client.PaymentFeignClient;
+import com.cauanlagrotta.service.client.SaloonFeignClient;
+import com.cauanlagrotta.service.client.ServiceOfferingFeignClient;
+import com.cauanlagrotta.service.client.UserFeignClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j;
 import org.slf4j.Logger;
@@ -26,46 +31,59 @@ import java.util.stream.Collectors;
 public class BookingController {
 
   private static final Logger log = LoggerFactory.getLogger(BookingController.class);
+
   private final BookingService bookingService;
+  private final SaloonFeignClient saloonFeignClient;
+  private final UserFeignClient userFeignClient;
+  private final ServiceOfferingFeignClient serviceOfferingFeignClient;
+  private final PaymentFeignClient paymentFeignClient;
 
   @PostMapping
-  public ResponseEntity<Booking> create(@RequestParam Long saloonId, @RequestBody BookingRequest bookingRequest){
-    UserDTO user = new UserDTO();
-    user.setId(1L);
+  public ResponseEntity<Booking> create(@RequestParam Long saloonId,
+                                        @RequestParam PaymentMethod paymentMethod,
+                                        @RequestBody BookingRequest bookingRequest,
+                                        @RequestHeader("Authorization") String jwt){
 
-    SaloonDTO saloon = new SaloonDTO();
-    saloon.setId(saloonId);
-    saloon.setOpeningTime(LocalTime.of(8, 0));
-    saloon.setClosingTime(LocalTime.of(18, 0));
+    UserDTO user = userFeignClient.getUserProfile(jwt).getBody();
+
+    SaloonDTO saloon = saloonFeignClient.getById(saloonId).getBody();
 
     log.info("Saloon id = {}, opening time = {}, closing time = {}", saloon.getId(), saloon.getOpeningTime(), saloon.getClosingTime());
 
-    Set<ServiceDTO> serviceDTOSet = new HashSet<>();
-
-    ServiceDTO service = new ServiceDTO();
-    service.setId(1L);
-    service.setPrice(399);
-    service.setDuration(45);
-    service.setName("Haircut for men");
-
-    serviceDTOSet.add(service);
+    Set<ServiceDTO> serviceDTOSet = serviceOfferingFeignClient.getByIds(bookingRequest.getServiceIds()).getBody();
 
     Booking booking = bookingService.create(bookingRequest, user, saloon, serviceDTOSet);
+
+    BookingDTO bookingDTO = BookingMapper.toDTO(booking);
+
+    paymentFeignClient.createPaymentLink(bookingDTO, paymentMethod);
 
     return ResponseEntity.ok(booking);
   }
 
   @GetMapping("/customer")
-  public ResponseEntity<Set<BookingDTO>> getByCustomerId(){
+  public ResponseEntity<Set<BookingDTO>> getByCustomerId(@RequestHeader("Authorization") String jwt){
 
-    List<Booking> bookings = bookingService.getByCustomerId(1L);
+    UserDTO user = userFeignClient.getUserProfile(jwt).getBody();
+
+    if(user == null || user.getId() == null){
+      throw new RuntimeException("User cannot be null");
+    }
+
+    List<Booking> bookings = bookingService.getByCustomerId(user.getId());
     return ResponseEntity.ok(getBookingDTOs(bookings));
   }
 
   @GetMapping("/saloon")
-  public ResponseEntity<Set<BookingDTO>> getBySaloonId(){
+  public ResponseEntity<Set<BookingDTO>> getBySaloonId(@RequestHeader("Authorization") String jwt){
 
-    List<Booking> bookings = bookingService.getBySaloonId(1L);
+    SaloonDTO saloonDTO = saloonFeignClient.getByOwnerId(jwt).getBody();
+
+    if(saloonDTO == null || saloonDTO.getId() == null){
+      throw new RuntimeException("Saloon id cannot be null");
+    }
+
+    List<Booking> bookings = bookingService.getBySaloonId(saloonDTO.getId());
     return ResponseEntity.ok(getBookingDTOs(bookings));
   }
 
