@@ -39,7 +39,7 @@ public class BookingController {
   private final PaymentFeignClient paymentFeignClient;
 
   @PostMapping
-  public ResponseEntity<Booking> create(@RequestParam Long saloonId,
+  public ResponseEntity<PaymentLinkResponse> create(@RequestParam Long saloonId,
                                         @RequestParam PaymentMethod paymentMethod,
                                         @RequestBody BookingRequest bookingRequest,
                                         @RequestHeader("Authorization") String jwt){
@@ -56,9 +56,9 @@ public class BookingController {
 
     BookingDTO bookingDTO = BookingMapper.toDTO(booking);
 
-    paymentFeignClient.createPaymentLink(bookingDTO, paymentMethod);
+    PaymentLinkResponse res = paymentFeignClient.createPaymentLink(bookingDTO, paymentMethod, jwt).getBody();
 
-    return ResponseEntity.ok(booking);
+    return ResponseEntity.ok(res);
   }
 
   @GetMapping("/customer")
@@ -123,9 +123,14 @@ public class BookingController {
   }
 
   @GetMapping("/report")
-  public ResponseEntity<SaloonReport> getSaloonReport(){
+  public ResponseEntity<SaloonReport> getSaloonReport(@RequestHeader("Authorization") String jwt){
+    SaloonDTO saloonDTO = saloonFeignClient.getByOwnerId(jwt).getBody();
 
-    SaloonReport report = bookingService.getSaloonReport(1L);
+    if (saloonDTO == null || saloonDTO.getId() == null){
+      throw new RuntimeException("saloonDTO or id cannot be null");
+    }
+
+    SaloonReport report = bookingService.getSaloonReport(saloonDTO.getId());
     return ResponseEntity.ok(report);
   }
 
