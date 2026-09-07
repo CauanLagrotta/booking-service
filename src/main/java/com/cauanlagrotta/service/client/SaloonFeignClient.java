@@ -1,7 +1,6 @@
 package com.cauanlagrotta.service.client;
 
 import com.cauanlagrotta.dto.SaloonDTO;
-import com.cauanlagrotta.service_offering.dto.SaloonDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
