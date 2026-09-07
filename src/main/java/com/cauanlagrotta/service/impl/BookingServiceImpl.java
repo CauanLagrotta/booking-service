@@ -22,125 +22,130 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
-  private final BookingRepository bookingRepository;
+	private final BookingRepository bookingRepository;
 
-  @Override
-  public Booking create(BookingRequest booking, UserDTO user, SaloonDTO saloon, Set<ServiceDTO> serviceDTOSet) {
+	@Override
+	public Booking create(BookingRequest booking, UserDTO user, SaloonDTO saloon, Set<ServiceDTO> serviceDTOSet) {
 
-    int totalDuration = serviceDTOSet.stream().mapToInt(ServiceDTO::getDuration).sum();
+		int totalDuration = serviceDTOSet.stream().mapToInt(ServiceDTO::getDuration).sum();
 
-    LocalDateTime bookingStartTime = booking.getStartTime();
-    LocalDateTime bookingEndTime = bookingStartTime.plusMinutes(totalDuration);
+		LocalDateTime bookingStartTime = booking.getStartTime();
+		LocalDateTime bookingEndTime = bookingStartTime.plusMinutes(totalDuration);
 
-    Boolean isSlotAvailable = isTimeSlotAvailable(saloon, bookingStartTime, bookingEndTime);
+		Boolean isSlotAvailable = isTimeSlotAvailable(saloon, bookingStartTime, bookingEndTime);
 
-    int totalPrice = serviceDTOSet.stream().mapToInt(ServiceDTO::getPrice).sum();
+		int totalPrice = serviceDTOSet.stream().mapToInt(ServiceDTO::getPrice).sum();
 
-    Set<Long> idList = serviceDTOSet.stream().map(ServiceDTO::getId).collect(Collectors.toSet());
+		Set<Long> idList = serviceDTOSet.stream().map(ServiceDTO::getId).collect(Collectors.toSet());
 
-    Booking newBooking = new Booking();
-    newBooking.setCustomerId(user.getId());
-    newBooking.setSaloonId(saloon.getId());
-    newBooking.setStartTime(bookingStartTime);
-    newBooking.setEndTime(bookingEndTime);
-    newBooking.setServiceIds(idList);
-    newBooking.setTotalPrice(totalPrice);
-    newBooking.setStatus(BookingStatus.PENDING);
+		Booking newBooking = new Booking();
+		newBooking.setCustomerId(user.getId());
+		newBooking.setSaloonId(saloon.getId());
+		newBooking.setStartTime(bookingStartTime);
+		newBooking.setEndTime(bookingEndTime);
+		newBooking.setServiceIds(idList);
+		newBooking.setTotalPrice(totalPrice);
+		newBooking.setStatus(BookingStatus.PENDING);
 
-    return bookingRepository.save(newBooking);
-  }
+		return bookingRepository.save(newBooking);
+	}
 
-  public Boolean isTimeSlotAvailable(SaloonDTO saloonDTO, LocalDateTime bookingStartTime, LocalDateTime bookingEndTime){
+	public Boolean isTimeSlotAvailable(SaloonDTO saloonDTO, LocalDateTime bookingStartTime,
+			LocalDateTime bookingEndTime) {
 
-    List<Booking> existingBookings = getBySaloonId(saloonDTO.getId());
+		List<Booking> existingBookings = getBySaloonId(saloonDTO.getId());
 
-    LocalDateTime saloonOpenTime = saloonDTO.getOpeningTime().atDate(bookingStartTime.toLocalDate());
-    LocalDateTime saloonCloseTime = saloonDTO.getClosingTime().atDate(bookingEndTime.toLocalDate());
+		LocalDateTime saloonOpenTime = saloonDTO.getOpeningTime().atDate(bookingStartTime.toLocalDate());
+		LocalDateTime saloonCloseTime = saloonDTO.getClosingTime().atDate(bookingEndTime.toLocalDate());
 
-    if(bookingStartTime.isBefore(saloonOpenTime) || bookingEndTime.isAfter(saloonCloseTime)){
-      throw new RuntimeException("Booking time must be within saloon's working hours.");
-    }
+		if (bookingStartTime.isBefore(saloonOpenTime) || bookingEndTime.isAfter(saloonCloseTime)) {
+			throw new RuntimeException("Booking time must be within saloon's working hours.");
+		}
 
-    for(Booking existingBooking : existingBookings){
-      LocalDateTime existingBookingStartTime = existingBooking.getStartTime();
-      LocalDateTime existingBookingEndTime = existingBooking.getEndTime();
+		for (Booking existingBooking : existingBookings) {
+			LocalDateTime existingBookingStartTime = existingBooking.getStartTime();
+			LocalDateTime existingBookingEndTime = existingBooking.getEndTime();
 
-      if(bookingStartTime.isBefore(existingBookingEndTime) && bookingEndTime.isAfter(existingBookingStartTime)){
-        throw new RuntimeException("Slot available. Choose another one.");
-      }
+			if (bookingStartTime.isBefore(existingBookingEndTime) && bookingEndTime.isAfter(existingBookingStartTime)) {
+				throw new RuntimeException("Slot available. Choose another one.");
+			}
 
-      if(bookingStartTime.isEqual(existingBookingStartTime) || bookingEndTime.isEqual(existingBookingEndTime)){
-        throw new RuntimeException("Slot available. Choose another one.");
-      }
-    }
+			if (bookingStartTime.isEqual(existingBookingStartTime) || bookingEndTime.isEqual(existingBookingEndTime)) {
+				throw new RuntimeException("Slot available. Choose another one.");
+			}
+		}
 
-    return true;
-  }
+		return true;
+	}
 
-  @Override
-  public List<Booking> getByCustomerId(Long customerId) {
-    return bookingRepository.findByCustomerId(customerId);
-  }
+	@Override
+	public List<Booking> getByCustomerId(Long customerId) {
+		return bookingRepository.findByCustomerId(customerId);
+	}
 
-  @Override
-  public List<Booking> getBySaloonId(Long saloonId) {
-    return bookingRepository.findBySaloonId(saloonId);
-  }
+	@Override
+	public List<Booking> getBySaloonId(Long saloonId) {
+		return bookingRepository.findBySaloonId(saloonId);
+	}
 
-  @Override
-  public Booking getById(Long bookingId) {
-    Booking booking = bookingRepository.findById(bookingId).orElse(null);
+	@Override
+	public Booking getById(Long bookingId) {
+		Booking booking = bookingRepository.findById(bookingId).orElse(null);
 
-    if(booking == null){
-      throw new RuntimeException("Booking not found");
-    }
+		if (booking == null) {
+			throw new RuntimeException("Booking not found");
+		}
 
-    return booking;
-  }
+		return booking;
+	}
 
-  @Override
-  public Booking update(Long bookingId, BookingStatus status) {
-    Booking booking = this.getById(bookingId);
-    booking.setStatus(status);
+	@Override
+	public Booking update(Long bookingId, BookingStatus status) {
+		Booking booking = this.getById(bookingId);
+		booking.setStatus(status);
 
-    return bookingRepository.save(booking);
-  }
+		return bookingRepository.save(booking);
+	}
 
-  @Override
-  public List<Booking> getByDateAndSaloonId(LocalDate date, Long saloonId) {
-    List<Booking> allBookings = getBySaloonId(saloonId);
+	@Override
+	public List<Booking> getByDateAndSaloonId(LocalDate date, Long saloonId) {
+		List<Booking> allBookings = getBySaloonId(saloonId);
 
-    if(date == null){
-      return allBookings;
-    }
+		if (date == null) {
+			return allBookings;
+		}
 
-    return allBookings.stream().filter(booking -> isSameDate(booking.getStartTime(), date) || isSameDate(booking.getEndTime(), date)).toList();
-  }
+		return allBookings.stream()
+				.filter(booking -> isSameDate(booking.getStartTime(), date) || isSameDate(booking.getEndTime(), date))
+				.toList();
+	}
 
-  private boolean isSameDate(LocalDateTime dateTime, LocalDate date) {
-    return dateTime.toLocalDate().isEqual(date);
-  }
+	private boolean isSameDate(LocalDateTime dateTime, LocalDate date) {
+		return dateTime.toLocalDate().isEqual(date);
+	}
 
-  @Override
-  public SaloonReport getSaloonReport(Long saloonId) {
-    List<Booking> bookings = getBySaloonId(saloonId);
+	@Override
+	public SaloonReport getSaloonReport(Long saloonId) {
+		List<Booking> bookings = getBySaloonId(saloonId);
 
-    int totalEarnings = bookings.stream().mapToInt(Booking::getTotalPrice).sum();
+		int totalEarnings = bookings.stream().mapToInt(Booking::getTotalPrice).sum();
 
-    Integer totalBooking = bookings.size();
+		Integer totalBooking = bookings.size();
 
-    List<Booking> cancelledBookings = bookings.stream().filter(booking -> booking.getStatus().equals(BookingStatus.CANCELLED)).toList();
+		List<Booking> cancelledBookings = bookings.stream()
+				.filter(booking -> booking.getStatus().equals(BookingStatus.CANCELLED)).toList();
 
-    Double totalRefund = cancelledBookings.stream().mapToDouble(Booking::getTotalPrice).sum();
+		Double totalRefund = cancelledBookings.stream().mapToDouble(Booking::getTotalPrice).sum();
 
-    SaloonReport report = new SaloonReport();
-    report.setSaloonId(saloonId);
-    report.setSaloonName("A very cool saloon");
-    report.setCancelledBookings(cancelledBookings.size());
-    report.setTotalBookings(totalBooking);
-    report.setTotalEarnings(totalEarnings);
-    report.setTotalRefund(totalRefund);
+		SaloonReport report = new SaloonReport();
+		report.setSaloonId(saloonId);
+		report.setSaloonName("A very cool saloon");
+		report.setCancelledBookings(cancelledBookings.size());
+		report.setTotalBookings(totalBooking);
+		report.setTotalEarnings(totalEarnings);
+		report.setTotalRefund(totalRefund);
 
-    return report;
-  }
+		return report;
+	}
+
 }
