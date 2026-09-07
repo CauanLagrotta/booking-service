@@ -6,6 +6,7 @@ import com.cauanlagrotta.dto.SaloonDTO;
 import com.cauanlagrotta.dto.ServiceDTO;
 import com.cauanlagrotta.dto.UserDTO;
 import com.cauanlagrotta.model.Booking;
+import com.cauanlagrotta.model.PaymentOrder;
 import com.cauanlagrotta.model.SaloonReport;
 import com.cauanlagrotta.repository.BookingRepository;
 import com.cauanlagrotta.service.BookingService;
@@ -146,6 +147,13 @@ public class BookingServiceImpl implements BookingService {
 		report.setTotalRefund(totalRefund);
 
 		return report;
+	}
+
+	@Override
+	public Booking bookingSuccess(PaymentOrder order) {
+		Booking existingBooking = getById(order.getBookingId());
+		existingBooking.setStatus(BookingStatus.CONFIRMED);
+		return bookingRepository.save(existingBooking);
 	}
 
 }
