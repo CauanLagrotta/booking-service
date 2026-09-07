@@ -6,6 +6,7 @@ import com.cauanlagrotta.dto.SaloonDTO;
 import com.cauanlagrotta.dto.ServiceDTO;
 import com.cauanlagrotta.dto.UserDTO;
 import com.cauanlagrotta.model.Booking;
+import com.cauanlagrotta.model.PaymentOrder;
 import com.cauanlagrotta.model.SaloonReport;
 
 import java.time.LocalDate;
@@ -27,4 +28,6 @@ public interface BookingService {
   List<Booking> getByDateAndSaloonId(LocalDate date, Long saloonId);
 
   SaloonReport getSaloonReport(Long saloonId);
+
+  Booking bookingSuccess(PaymentOrder order);
 }
